@@ -92,8 +92,8 @@ def wlsq(X, y, d):
 
 
     # calculate the coefficients
-    diagDXtX = np.dot(np.diag(d), (np.dot(X.T, X)))
-    beta = np.dot(np.linalg.inv(diagDXtX), np.dot(X.T, y))
+    xw = X.T * d
+    beta = np.dot(np.linalg.inv(np.dot(xw, X)), np.dot(xw, y))
 
     return beta
 
