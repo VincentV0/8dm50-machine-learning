@@ -3,7 +3,7 @@ from PIL import Image
 #from sklearn.feature_extraction.image import extract_patches_2d
 #import time
 #import matplotlib.pyplot as plt
-
+from sklearn.feature_extraction.image import extract_patches_2d
 
 def load_data(impaths_all, test=False):
     """
@@ -21,12 +21,12 @@ def load_data(impaths_all, test=False):
     # Load as numpy array and normalize between 0 and 1
     for im_path in impaths_all:
         images.append(np.array(Image.open(im_path)) / 255.)
-        mask_path = im_path.replace('images', 'mask').replace('.tif', '_mask.gif')
+        mask_path = im_path.replace('images', 'mask').replace('.png', '_mask.gif')
         masks.append(np.array(Image.open(mask_path)) / 255.)
         if not test:
-            seg_path = im_path.replace('images', '1st_manual').replace('training.tif', 'manual1.gif')
+            seg_path = im_path.replace('images', '1st_manual').replace('training.png', 'manual1.gif')
         else:
-            seg_path = im_path.replace('images', '1st_manual').replace('test.tif', 'manual1.gif')
+            seg_path = im_path.replace('images', '1st_manual').replace('test.png', 'manual1.gif')
         segmentations.append(np.array(Image.open(seg_path)) / 255.)
 
     # Convert to numpy arrays with channels last and return
