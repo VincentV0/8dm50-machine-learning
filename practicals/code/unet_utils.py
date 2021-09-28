@@ -1,9 +1,8 @@
 import numpy as np
 from PIL import Image
-from sklearn.feature_extraction.image import extract_patches_2d
-import gryds
-import time
-import matplotlib.pyplot as plt
+#from sklearn.feature_extraction.image import extract_patches_2d
+#import time
+#import matplotlib.pyplot as plt
 
 
 def load_data(impaths_all, test=False):
