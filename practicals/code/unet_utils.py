@@ -1,6 +1,5 @@
 import numpy as np
 from PIL import Image
-#from sklearn.feature_extraction.image import extract_patches_2d
 #import time
 #import matplotlib.pyplot as plt
 from sklearn.feature_extraction.image import extract_patches_2d
@@ -32,8 +31,6 @@ def load_data(impaths_all, test=False):
         return np.array(images), np.expand_dims(np.array(masks), axis=-1)
     else:
         return np.array(images), np.expand_dims(np.array(masks), axis=-1), np.expand_dims(np.array(segmentations), axis=-1)
-
-
 
 
 def pad_image(image, desired_shape):
@@ -152,3 +149,22 @@ def datagenerator(images, segmentations, patch_size, patches_per_im, batch_size)
             y_batch = y[idx * batch_size:(idx + 1) * batch_size]
             yield x_batch, y_batch
 
+
+# Data augmentation
+def brightness_offset(images, masks, segs, offset_range, nr_augmentations):
+    aug_images = np.zeros((nr_augmentations, images.shape[1], images.shape[2], images.shape[3]))
+    aug_masks  = np.zeros((nr_augmentations, masks.shape[1], masks.shape[2], masks.shape[3]))
+    aug_segms  = np.zeros((nr_augmentations, segs.shape[1], segs.shape[2], segs.shape[3]))
+    
+    for i in range(nr_augmentations):
+        offset = np.random.uniform(offset_range[0], offset_range[1])
+        image_id = np.random.randint(len(images))
+        new_image = images[image_id] + offset
+        aug_images[i, :, :, :] = new_image
+        aug_segms[i, :, :, :]  = segs[image_id]
+        aug_masks[i, :, :, :]  = masks[image_id]
+
+    return np.concatenate((images, aug_images), axis=0), \
+        np.concatenate((masks, aug_masks), axis=0), \
+        np.concatenate((segs, aug_segms), axis=0)
+        
