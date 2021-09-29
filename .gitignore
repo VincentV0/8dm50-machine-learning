@@ -347,3 +347,6 @@ TSWLatexianTemp*
 *.spl
 
 *.DS_Store
+
+# Don't upload DRIVE data
+data/DRIVE/
