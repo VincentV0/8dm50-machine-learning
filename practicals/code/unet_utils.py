@@ -1,6 +1,5 @@
 import numpy as np
 from PIL import Image
-#from sklearn.feature_extraction.image import extract_patches_2d
 #import time
 #import matplotlib.pyplot as plt
 from sklearn.feature_extraction.image import extract_patches_2d
@@ -25,12 +24,13 @@ def load_data(impaths_all, test=False):
         masks.append(np.array(Image.open(mask_path)) / 255.)
         if not test:
             seg_path = im_path.replace('images', '1st_manual').replace('training.png', 'manual1.gif')
+            segmentations.append(np.array(Image.open(seg_path)) / 255.)
         else:
-            seg_path = im_path.replace('images', '1st_manual').replace('test.png', 'manual1.gif')
-        segmentations.append(np.array(Image.open(seg_path)) / 255.)
-
-    # Convert to numpy arrays with channels last and return
-    return np.array(images), np.expand_dims(np.array(masks), axis=-1), np.expand_dims(np.array(segmentations), axis=-1)
+            pass;
+    if test:
+        return np.array(images), np.expand_dims(np.array(masks), axis=-1)
+    else:
+        return np.array(images), np.expand_dims(np.array(masks), axis=-1), np.expand_dims(np.array(segmentations), axis=-1)
 
 
 def pad_image(image, desired_shape):
@@ -69,6 +69,25 @@ def preprocessing(images, masks, segmentations, desired_shape):
         padded_segmentations.append(pad_image(seg, desired_shape))
 
     return np.array(padded_images), np.array(padded_masks), np.array(padded_segmentations)
+
+def preprocessing_no_seg(images, masks, desired_shape):
+    """
+    Pad all images, masks and segmentations to desired shape
+
+    :param images: Numpy array of images
+    :param masks: Numpy array of masks
+    :param desired_shape: Desired shape of padded image
+    :return: Padded images, masks and segmentations
+    """
+    padded_images = []
+    padded_masks = []
+    for im, mask in zip(images, masks):
+        padded_images.append(pad_image(im, desired_shape))
+        padded_masks.append(pad_image(mask, desired_shape))
+
+    return np.array(padded_images), np.array(padded_masks)
+
+
 
 
 def extract_patches(images, segmentations, patch_size, patches_per_im, seed):
@@ -130,3 +149,22 @@ def datagenerator(images, segmentations, patch_size, patches_per_im, batch_size)
             y_batch = y[idx * batch_size:(idx + 1) * batch_size]
             yield x_batch, y_batch
 
+
+# Data augmentation
+def brightness_offset(images, masks, segs, offset_range, nr_augmentations):
+    aug_images = np.zeros((nr_augmentations, images.shape[1], images.shape[2], images.shape[3]))
+    aug_masks  = np.zeros((nr_augmentations, masks.shape[1], masks.shape[2], masks.shape[3]))
+    aug_segms  = np.zeros((nr_augmentations, segs.shape[1], segs.shape[2], segs.shape[3]))
+    
+    for i in range(nr_augmentations):
+        offset = np.random.uniform(offset_range[0], offset_range[1])
+        image_id = np.random.randint(len(images))
+        new_image = images[image_id] + offset
+        aug_images[i, :, :, :] = new_image
+        aug_segms[i, :, :, :]  = segs[image_id]
+        aug_masks[i, :, :, :]  = masks[image_id]
+
+    return np.concatenate((images, aug_images), axis=0), \
+        np.concatenate((masks, aug_masks), axis=0), \
+        np.concatenate((segs, aug_segms), axis=0)
+        
