@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image
+import gryds
 #import time
 #import matplotlib.pyplot as plt
 from sklearn.feature_extraction.image import extract_patches_2d
@@ -107,7 +108,7 @@ def extract_patches(images, segmentations, patch_size, patches_per_im, seed):
     x = np.zeros((inp_size, patch_size[0], patch_size[1], images.shape[-1]))
     y = np.zeros((inp_size, patch_size[0], patch_size[1], segmentations.shape[-1]))
 
-    # Loop over all the images (and corresponding segmentations) and extract random patches 
+    # Loop over all the images (and corresponding segmentations) and extract random patches
     # using the extract_patches_2d function of scikit learn
     for idx, (im, seg) in enumerate(zip(images, segmentations)):
         # Note the random seed to ensure the corresponding segmentation is extracted for each patch
@@ -155,7 +156,7 @@ def brightness_offset(images, masks, segs, offset_range, nr_augmentations):
     aug_images = np.zeros((nr_augmentations, images.shape[1], images.shape[2], images.shape[3]))
     aug_masks  = np.zeros((nr_augmentations, masks.shape[1], masks.shape[2], masks.shape[3]))
     aug_segms  = np.zeros((nr_augmentations, segs.shape[1], segs.shape[2], segs.shape[3]))
-    
+
     for i in range(nr_augmentations):
         offset = np.random.uniform(offset_range[0], offset_range[1])
         image_id = np.random.randint(len(images))
@@ -167,4 +168,70 @@ def brightness_offset(images, masks, segs, offset_range, nr_augmentations):
     return np.concatenate((images, aug_images), axis=0), \
         np.concatenate((masks, aug_masks), axis=0), \
         np.concatenate((segs, aug_segms), axis=0)
-        
+
+
+def brightness_offset(images, masks, segs, offset_range, nr_augmentations):
+    aug_images = np.zeros((nr_augmentations, images.shape[1], images.shape[2], images.shape[3]))
+    aug_masks = np.zeros((nr_augmentations, masks.shape[1], masks.shape[2], masks.shape[3]))
+    aug_segms = np.zeros((nr_augmentations, segs.shape[1], segs.shape[2], segs.shape[3]))
+
+    for i in range(nr_augmentations):
+        offset = np.random.uniform(offset_range[0], offset_range[1])
+        image_id = np.random.randint(len(images))
+        new_image = images[image_id] + offset
+        aug_images[i, :, :, :] = new_image
+        aug_segms[i, :, :, :] = segs[image_id]
+        aug_masks[i, :, :, :] = masks[image_id]
+
+    return np.concatenate((images, aug_images), axis=0), \
+           np.concatenate((masks, aug_masks), axis=0), \
+           np.concatenate((segs, aug_segms), axis=0)
+
+def bspline_brightness_offset(images, masks, segs, offset_range, nr_augmentations):
+    aug_images = np.zeros((nr_augmentations, images.shape[1], images.shape[2], images.shape[3]))
+    aug_masks = np.zeros((nr_augmentations, masks.shape[1], masks.shape[2], masks.shape[3]))
+    aug_segms = np.zeros((nr_augmentations, segs.shape[1], segs.shape[2], segs.shape[3]))
+
+    for i in range(nr_augmentations):
+        # Load image number to be augmented
+        image_id = np.random.randint(len(images))
+
+        # Create empty original size variables
+        transf_image = np.zeros_like(images[image_id])
+
+        # Random 3x3 B-spline grid for a 2D image
+        random_grid = np.random.rand(2, 3, 3) # Random 3x3 between [0,1]
+        random_grid -= 0.5 # make random between -0.5 and 0.5
+        random_grid /= 5 # random between -0.1 and 0.1 (i.e. max 10% deformation in all directions)
+
+        # Define a B-spline transformation object
+        bspline = gryds.BSplineTransformation(random_grid)
+
+        # Define an interpolator object for the image (per color channel):
+        interpolator_image1 = gryds.Interpolator(images[image_id,:,:,0])
+        interpolator_image2 = gryds.Interpolator(images[image_id,:,:,1])
+        interpolator_image3 = gryds.Interpolator(images[image_id,:,:,2])
+        interpolator_seg = gryds.Interpolator(segs[image_id,:,:,0])
+        print(masks[image_id:,:,0].shape)
+        interpolator_mask = gryds.Interpolator(masks[image_id:,:,0])
+
+        # Transform the image using the B-spline transformation (Per color channel)
+        transf_image1 = interpolator_image1.transform(bspline)
+        transf_image2 = interpolator_image2.transform(bspline)
+        transf_image3 = interpolator_image3.transform(bspline)
+        transf_seg = interpolator_seg.transform(bspline)
+        transf_mask = interpolator_mask.transform(bspline)
+
+        # Recombine color channels
+        transf_image[:,:,:,0], transf_image[:,:,:,1], transf_image[:,:,:,2] = transf_image1, transf_image2, transf_image3
+
+        # Add brightness offset only to image
+        offset = np.random.uniform(offset_range[0], offset_range[1])
+        new_image = transf_image + offset
+        aug_images[i, :, :, :] = new_image
+        aug_segms[i, :, :, :] = transf_seg
+        aug_masks[i, :, :, :] = transf_mask
+
+    return np.concatenate((images, aug_images), axis=0), \
+           np.concatenate((masks, aug_masks), axis=0), \
+           np.concatenate((segs, aug_segms), axis=0)
