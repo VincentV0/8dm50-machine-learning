@@ -349,4 +349,4 @@ TSWLatexianTemp*
 *.DS_Store
 
 # Don't upload DRIVE data
-practicals/data/DRIVE/
+data/DRIVE/
