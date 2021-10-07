@@ -25,13 +25,10 @@ def load_data(impaths_all, test=False):
         masks.append(np.array(Image.open(mask_path)) / 255.)
         if not test:
             seg_path = im_path.replace('images', '1st_manual').replace('training.png', 'manual1.gif')
-            segmentations.append(np.array(Image.open(seg_path)) / 255.)
         else:
-            pass;
-    if test:
-        return np.array(images), np.expand_dims(np.array(masks), axis=-1)
-    else:
-        return np.array(images), np.expand_dims(np.array(masks), axis=-1), np.expand_dims(np.array(segmentations), axis=-1)
+            seg_path = im_path.replace('images', '1st_manual').replace('test.png', 'manual1.gif')
+        segmentations.append(np.array(Image.open(seg_path)) / 255.)
+    return np.array(images), np.expand_dims(np.array(masks), axis=-1), np.expand_dims(np.array(segmentations), axis=-1)
 
 
 def pad_image(image, desired_shape):
@@ -70,25 +67,6 @@ def preprocessing(images, masks, segmentations, desired_shape):
         padded_segmentations.append(pad_image(seg, desired_shape))
 
     return np.array(padded_images), np.array(padded_masks), np.array(padded_segmentations)
-
-def preprocessing_no_seg(images, masks, desired_shape):
-    """
-    Pad all images, masks and segmentations to desired shape
-
-    :param images: Numpy array of images
-    :param masks: Numpy array of masks
-    :param desired_shape: Desired shape of padded image
-    :return: Padded images, masks and segmentations
-    """
-    padded_images = []
-    padded_masks = []
-    for im, mask in zip(images, masks):
-        padded_images.append(pad_image(im, desired_shape))
-        padded_masks.append(pad_image(mask, desired_shape))
-
-    return np.array(padded_images), np.array(padded_masks)
-
-
 
 
 def extract_patches(images, segmentations, patch_size, patches_per_im, seed):
