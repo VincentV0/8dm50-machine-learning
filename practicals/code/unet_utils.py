@@ -131,41 +131,56 @@ def datagenerator(images, segmentations, patch_size, patches_per_im, batch_size)
 
 # Data augmentation
 def brightness_offset(images, masks, segs, offset_range, nr_augmentations):
+    """
+    Perform data augmentation by adding an offset to the images.
+    
+    :param images: Input images
+    :param masks: Corresponding masks
+    :param segs: Corresponding segmentations
+    :param offset_range: The range of values that can be applied as an offset
+    :param nr_augmentations: The number of augmentations that have to be created from the input data
+    :return: Images, masks and segmentations (both original and augmented)
+    """
+    
+    # Create empty arrays to store augmentations to
     aug_images = np.zeros((nr_augmentations, images.shape[1], images.shape[2], images.shape[3]))
     aug_masks  = np.zeros((nr_augmentations, masks.shape[1], masks.shape[2], masks.shape[3]))
     aug_segms  = np.zeros((nr_augmentations, segs.shape[1], segs.shape[2], segs.shape[3]))
 
     for i in range(nr_augmentations):
+        # Randomly select an offset in the defined range, and randomly select an image 
+        # to apply the augmentation to
         offset = np.random.uniform(offset_range[0], offset_range[1])
         image_id = np.random.randint(len(images))
+        
+        # Apply offset and store augmented data in array
         new_image = images[image_id] + offset
         aug_images[i, :, :, :] = new_image
         aug_segms[i, :, :, :]  = segs[image_id]
         aug_masks[i, :, :, :]  = masks[image_id]
 
-    return np.concatenate((images, aug_images), axis=0), \
-        np.concatenate((masks, aug_masks), axis=0), \
-        np.concatenate((segs, aug_segms), axis=0)
+    # Combine original dataset with augmented dataset
+    images = np.concatenate((images, aug_images), axis=0)
+    masks = np.concatenate((masks, aug_masks), axis=0)
+    segs = np.concatenate((segs, aug_segms), axis=0)
+    
+    return images, masks, segs
 
-
-# def brightness_offset(images, masks, segs, offset_range, nr_augmentations):
-#     aug_images = np.zeros((nr_augmentations, images.shape[1], images.shape[2], images.shape[3]))
-#     aug_masks = np.zeros((nr_augmentations, masks.shape[1], masks.shape[2], masks.shape[3]))
-#     aug_segms = np.zeros((nr_augmentations, segs.shape[1], segs.shape[2], segs.shape[3]))
-
-#     for i in range(nr_augmentations):
-#         offset = np.random.uniform(offset_range[0], offset_range[1])
-#         image_id = np.random.randint(len(images))
-#         new_image = images[image_id] + offset
-#         aug_images[i, :, :, :] = new_image
-#         aug_segms[i, :, :, :] = segs[image_id]
-#         aug_masks[i, :, :, :] = masks[image_id]
-
-#     return np.concatenate((images, aug_images), axis=0), \
-#            np.concatenate((masks, aug_masks), axis=0), \
-#            np.concatenate((segs, aug_segms), axis=0)
 
 def bspline_brightness_offset(images, masks, segs, offset_range, nr_augmentations):
+    """
+    Perform data augmentation by applying random B-spline transformations
+    and adding an brightness offset to the data.
+    
+    :param images: Input images
+    :param masks: Corresponding masks
+    :param segs: Corresponding segmentations
+    :param offset_range: The range of values that can be applied as an offset
+    :param nr_augmentations: The number of augmentations that have to be created from the input data
+    :return: Images, masks and segmentations (both original and augmented)
+    """
+    
+    # Create empty arrays to store augmentations to
     aug_images = np.zeros((nr_augmentations, images.shape[1], images.shape[2], images.shape[3]))
     aug_masks = np.zeros((nr_augmentations, masks.shape[1], masks.shape[2], masks.shape[3]))
     aug_segms = np.zeros((nr_augmentations, segs.shape[1], segs.shape[2], segs.shape[3]))
@@ -202,13 +217,14 @@ def bspline_brightness_offset(images, masks, segs, offset_range, nr_augmentation
         # Recombine color channels
         transf_image[:,:,0], transf_image[:,:,1], transf_image[:,:,2] = transf_image1, transf_image2, transf_image3
 
-        # Add brightness offset only to image
+        # Add brightness offset only to image and add all data to arrays
         offset = np.random.uniform(offset_range[0], offset_range[1])
         new_image = transf_image + offset
         aug_images[i, :, :, :] = new_image
-        aug_segms[i, :, :, :] = transf_seg[:,:, np.newaxis]
-        aug_masks[i, :, :, :] = transf_mask[:,:, np.newaxis]
+        aug_segms[i, :, :, :] = transf_seg[:, :, np.newaxis]
+        aug_masks[i, :, :, :] = transf_mask[:, :, np.newaxis]
 
+    # Return original and augmented data
     return np.concatenate((images, aug_images), axis=0), \
            np.concatenate((masks, aug_masks), axis=0), \
            np.concatenate((segs, aug_segms), axis=0)
