@@ -4,6 +4,7 @@ import gryds
 #import time
 #import matplotlib.pyplot as plt
 from sklearn.feature_extraction.image import extract_patches_2d
+from tensorflow.keras import backend as K
 
 def load_data(impaths_all, test=False):
     """
@@ -231,3 +232,22 @@ def bspline_brightness_offset(images, masks, segs, offset_range, nr_augmentation
     return np.concatenate((images, aug_images), axis=0), \
            np.concatenate((masks, aug_masks), axis=0), \
            np.concatenate((segs, aug_segms), axis=0)
+
+
+def dice_coef(y_true, y_pred, smooth=1.0):
+    """
+    DESCRIPTION: Dice similarity coefficient (DSC) metric, which can be used in the keras backend
+    ----------
+    INPUTS:
+    y_true: the real labels.
+    y_pred: the predicted labels via network.
+    smooth: smoothing for fully negative ground truths
+    -------
+    OUTPUTS:
+    the DSC
+    """
+
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
