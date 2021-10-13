@@ -214,6 +214,9 @@ def bspline_brightness_offset(images, masks, segs, offset_range, nr_augmentation
         transf_seg = interpolator_seg.transform(bspline)
         transf_mask = interpolator_mask.transform(bspline)
 
+        transf_seg = (transf_seg-np.min(transf_seg))/(np.max(transf_seg)-np.min(transf_seg)) # Scale between 0 and 1 again after Bspline transform
+        transf_seg = (transf_seg > 0.5).astype(int)
+
         # Recombine color channels
         transf_image[:,:,0], transf_image[:,:,1], transf_image[:,:,2] = transf_image1, transf_image2, transf_image3
 
